@@ -1,0 +1,7 @@
+neo4j:
+  image: neo4j:2.3.3
+  ports:
+    - "127.0.0.1:7474:7474"
+  volumes:
+    - ./plugins:/plugins
+    - ./data:/data
