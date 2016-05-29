@@ -8,5 +8,5 @@ LOAD CSV WITH HEADERS
 FROM 'file:///data/csvdata/cervezamvdeo_point.csv'
 AS line
 MATCH (d:Departamentos {d_nombre: line.department }),
-      (v:Vendedores { cv_id: line.id })
+      (v:Vendedores { v_id: line.id })
 MERGE (v)-[:UBICADO_EN]->(d);
