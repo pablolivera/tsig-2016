@@ -21,13 +21,13 @@
 
     <style>
         body { margin:0; padding:0; }
-        #map { position:absolute; top:50px; bottom:0; width:100%; }
+        #map { position:absolute; top:35px; bottom:0; width:100%; }
 
         #desc{
             position:absolute;
             margin-left:5px;
             margin-right: 5px;
-            height: 50px;
+            height: 35px;
             width:100%;
 
         }
@@ -51,10 +51,24 @@
 <body>
 <div id="desc">
     <div class="row top-row">
-        <div class="col-xs-6">
-            <h3 class="heading">Menu <small>..</small></h3>
-        </div>
-        
+		<div class="col-xs-5">
+			<select id="method">
+			  <option value="1">Departamento - Polygon</option>
+			  <option value="2">Vendedores Cerveza - Points</option>
+			  <option value="3">Otro..</option>
+			</select>
+			<select id="distance">
+			  <option value="1">1 Km</option>
+			  <option value="3">3 Km</option>
+			  <option value="5" selected="selected">5 Km</option>
+			  <option value="10">10 Km</option>
+			  <option value="20">20 Km</option>
+			  <option value="50">50 Km</option>
+			  <option value="100">100 Km</option>
+			  <option value="200">200 Km</option>
+			</select>
+			<button id="cleanBtn">Clean</button> 
+		</div>			
     </div>
 </div>
 <div id='map'></div>
@@ -68,15 +82,6 @@
     var baseURI = 'http://localhost:7474';
     // Token que provee MapBox. Crear un cuenta en mapbox.com
     var MB_API_TOKEN = "pk.eyJ1IjoicGFibG9saXZlcmEiLCJhIjoiY2lvMjEyc2U4MWFvbHVnbHl4YTJncHlsNSJ9.D1k_wpA7LoXOyxCEK-1U6A";
-
-    var subjectsQuery = "MATCH (d:District {state: {state}, district: {district}}) \n" +
-            "MATCH (d)<-[:REPRESENTS]-(l:Legislator) \n" +
-            "MATCH (l)-[:SERVES_ON]->(c:Committee) \n" +
-            "MATCH (c)<-[:REFERRED_TO]-(b:Bill) \n" +
-            "MATCH (b)-[:DEALS_WITH]->(s:Subject) \n" +
-            "WITH l.govtrackID AS govtrackID, l.lastName AS lastName, l.firstName AS firstName, l.currentParty AS party, s.title AS subject, count(*) AS strength, collect(DISTINCT c.name) AS committees ORDER BY strength DESC LIMIT 10 \n" +
-            "WITH {lastName: lastName, firstName: firstName, govtrackID: govtrackID, party: party, committees: committees} AS legislator, collect({subject: subject, strength: strength}) AS subjects \n" +
-            "RETURN {legislator: legislator, subjects: subjects} AS r ";
 
     /**
      * Clears the map. Remove all currently shown layers
@@ -124,7 +129,7 @@
 		feature += '"properties": {'; 
 		feature += '"title": "' + name +'",'; 		
 		feature += '"description": "'+ (direction != undefined ? direction : 'Desconocida') + '",'; 
-		feature += ' "marker-color": "#3ca0d3", "marker-size": "large", "marker-symbol": "rocket", '; 
+		feature += ' "marker-color": "#3ca0d3", "marker-size": "large", '; 
 		feature += icon;
 		feature += ' } }';
 		
@@ -147,7 +152,6 @@
 			geoJSON += addFeature(xy, wktArray[i]["data"]["v_nombre"], wktArray[i]["data"]["v_direccion"]);
 		}
 		geoJSON += ']';
-		console.log(geoJSON);
         return jQuery.parseJSON(geoJSON);
     }
 
@@ -166,7 +170,7 @@
                 callback("Error", null);
             },
             success: function(data) {
-                console.log(data);
+                //console.log(data);
                 callback(null, data);
             }
         })
@@ -267,7 +271,12 @@
 		text += 'Capital: ' + d["info"]["d_capital"] + '<br/>';
 		text += 'Intendente: ' + d["info"]["d_intendente"] + '<br/>';
 		text += 'Pob: ' + d["info"]["d_poblacion"] + '<br/>';
-        return text; // text
+		text += 'Densidad: ' + d["info"]["d_densidad"] + '<br/>';
+		text += 'Fundación: ' + d["info"]["d_fundacion"] + '<br/>';
+		text += 'Gentilicio: ' + d["info"]["d_gentilicio"] + '<br/>';
+		text += 'Matricula: ' + d["info"]["d_matriculas_vehiculares"] + '<br/>';
+		
+        return text;
     }
 
     /**
@@ -309,11 +318,11 @@
      * @param event
      */
     function getClosestDepartment(event) {
-        infoDepartmentWithinDistance(event.latlng, 10);
+        infoDepartmentWithinDistance(event.latlng, distance);
     }
 
 	function getClosestSellers(event) {
-        findSellersWithinDistance(event.latlng, 5);
+        findSellersWithinDistance(event.latlng, distance);
     }
 
 
@@ -322,14 +331,44 @@
             .setView([-34.9090, -56.1730], 11); // Setear latitud y longitud de inicio del mapa y el nivel del zoom.
 	
 	var sellersLayer;
-		
+	var methodType;
+	var distance;
+	
+	function initSelect() {
+		methodType = 1;
+		distance = 5;
+	}
+	$(initSelect());
+	
+	$('#method').on('change', function() {
+		methodType = $(this).val();
+		console.log(methodType);
+	});
+	
+	$('#distance').on('change', function() {
+		distance = $(this).val();
+		console.log(methodType);
+	});
+	
+	$( "#cleanBtn" ).on( "click", function() {
+		if (sellersLayer != null && sellersLayer != 'undefined') {
+			map.removeLayer(sellersLayer);
+		}
+		clearMap(map);
+		initSelect();
+	});
+	
     map.on('click', function(e) { // Asociar el evento click        
 		if (sellersLayer != null && sellersLayer != 'undefined') {
 			map.removeLayer(sellersLayer);
 		}
 		clearMap(map);
-        //getClosestDepartment(e);
-		getClosestSellers(e);
+		
+		if (methodType == 1) {
+			getClosestDepartment(e);
+		} else if (methodType == 2) {
+			getClosestSellers(e);
+		}
     });
 	
 
