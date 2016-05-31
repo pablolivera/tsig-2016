@@ -21,13 +21,13 @@
 
     <style>
         body { margin:0; padding:0; }
-        #map { position:absolute; top:1px; bottom:0; width:100%; }
+        #map { position:absolute; top:50px; bottom:0; width:100%; }
 
         #desc{
             position:absolute;
             margin-left:5px;
             margin-right: 5px;
-            height: 100px;
+            height: 50px;
             width:100%;
 
         }
@@ -49,7 +49,14 @@
     </style>
 </head>
 <body>
-
+<div id="desc">
+    <div class="row top-row">
+        <div class="col-xs-6">
+            <h3 class="heading">Menu <small>..</small></h3>
+        </div>
+        
+    </div>
+</div>
 <div id='map'></div>
 
 <script>
@@ -86,7 +93,7 @@
             }
         }
     }
-
+	
     /**
      *  Converts Polygon WKT string to an array of [x,y] points
      */
@@ -102,6 +109,46 @@
         });
 
         return pointArr;
+    }
+
+	function addFeature(point, name, direction) {
+		// Crear cada elemento de array de geoJSON
+		//	https://www.mapbox.com/help/markers/
+		var icon = '"icon": { "iconUrl": "http://localhost:8000/Beer-icon.png",';
+		icon += ' "iconSize": [24, 24],';  // size of the icon
+        icon += ' "iconAnchor": [25, 25],';  // point of the icon which will correspond to marker's location
+        icon += ' "popupAnchor": [0, -25],';  // point from which the popup should open relative to the iconAnchor
+        icon += ' "className": "dot" }';
+		
+		var feature = '{"type": "Feature", "geometry": { "type": "Point", "coordinates": [' + point[0] + ',' + point[1] +'] },';
+		feature += '"properties": {'; 
+		feature += '"title": "' + name +'",'; 		
+		feature += '"description": "'+ (direction != undefined ? direction : 'Desconocida') + '",'; 
+		feature += ' "marker-color": "#3ca0d3", "marker-size": "large", "marker-symbol": "rocket", '; 
+		feature += icon;
+		feature += ' } }';
+		
+		return feature;
+	}
+ 
+	function parseWKTPoints(wktArray) {
+		// Armar un string con la estructura para luego parsear a geo.json
+		var geoJSON = '[' ;
+		var first = 1;
+		for (var i = 0; i < wktArray.length; i++) {
+			var wkt = wktArray[i]["data"]["v_wkt"];
+			var point = wkt.slice(7, -1).split(" ");
+			var xy = [Number(point[1]), Number(point[0])];
+            if (first == 1) {
+				first = 0;
+			} else {
+				geoJSON += ', '; 
+			}
+			geoJSON += addFeature(xy, wktArray[i]["data"]["v_nombre"], wktArray[i]["data"]["v_direccion"]);
+		}
+		geoJSON += ']';
+		console.log(geoJSON);
+        return jQuery.parseJSON(geoJSON);
     }
 
     /**
@@ -157,6 +204,32 @@
         });
     }
 
+	function findSellersWithinDistance(latlng, distance) {
+
+        var params = {
+            "layer": "geomv",
+            "pointX": latlng.lat,
+            "pointY": latlng.lng,
+            "distanceInKm": distance
+        };
+		console.log("lng " + latlng.lng + " - lat " + latlng.lat)
+
+        var districtURL = baseURI + findGeometriesPath;
+        makePOSTRequest(districtURL, params, function (error, data) {
+
+            if (error) {
+                console.log("Error");
+            } else {
+                console.log("Resultado Vendedores: ");
+				console.log(data);
+                var geoJSON = parseWKTPoints(data);
+				//console.log(points);
+				addSellersToMap(geoJSON);
+            }
+        });
+    }
+
+
     /**
      *  Run a Cypher query
      */
@@ -190,61 +263,6 @@
      * @returns {string}
      */
     function buildPopup(d) {
-/*
-        var legislator = d["legislator"];
-        var committees = legislator["committees"];
-        var legislatorName = "Rep. " + legislator["firstName"] + " " + legislator["lastName"];
-        var imgURL= "https://www.govtrack.us/data/photos/" + legislator["govtrackID"] + "-50px.jpeg";
-        var subjects = d["subjects"];
-
-        var text =
-                '<ul class="nav nav-tabs" role="tablist">' +
-                    '<li role="presentation" class="active"><a href="#home" aria-controls="home" role="tab" data-toggle="tab">Info</a></li>' +
-                    '<li role="presentation"><a href="#code" aria-controls="code" role="tab" data-toggle="tab">Code</a></li>' +
-                '</ul>' +
-            '<div class="tab-content">' +
-                '<div role="tabpanel" class="tab-pane active" id="home">' +
-
-                    '<div class="row">' +
-                        '<div class="col-xs-3">' +
-                            '<img src="'+ imgURL + '">' +
-                        '</div>' +
-                        '<div class="col-xs-9">' +
-                            '<ul class="list-unstyled">' +
-                            '<li><strong>' + legislatorName + '</strong></li>' +
-                            '<li>District: ' + d["district"] + '</li>' +
-                            '<li>State: ' + d["state"] + '</li>' +
-                        '</div>' +
-                    '</div>' +
-
-                    '<div class="row committees">' +
-                        '<dl><dt>Committees</dt>';
-
-                $.each(committees, function(i,v) {
-                        text = text + '<dd>' + v + '</dd>';
-                });
-                   text = text +
-                        '</dl>' +
-                    '</div>' +
-
-                    '<div class="row">' +
-                        '<ul>';
-                $.each(subjects, function(i,v) {
-                    text = text + '<li>' + v["subject"] + " (" + v["strength"] + ")";
-                });
-                            text = text +
-                        '</ul>' +
-                    '</div>' +
-                '</div>' +
-            '<div role="tabpanel" class="tab-pane" id="code">' +
-                '<pre class="pre-scrollable">' + subjectsQuery + '</pre>' +
-            '</div>' +
-
-        '</div>'
-            ;
-
-*/
-
 		var text = 'Nombre: ' + d["info"]["d_nombre"] + '<br/>'; 
 		text += 'Capital: ' + d["info"]["d_capital"] + '<br/>';
 		text += 'Intendente: ' + d["info"]["d_intendente"] + '<br/>';
@@ -274,7 +292,16 @@
         popup.update();
 
     }
-
+	
+	function addSellersToMap(geojson) {
+		sellersLayer = L.mapbox.featureLayer().addTo(map);
+		sellersLayer.on('layeradd', function(e) {
+			var marker = e.layer;
+			var feature = marker.feature;
+			marker.setIcon(L.icon(feature.properties.icon));
+		});
+		sellersLayer.setGeoJSON(geojson);
+	}
 
     /**
      * Event handler for map click
@@ -285,14 +312,26 @@
         infoDepartmentWithinDistance(event.latlng, 10);
     }
 
+	function getClosestSellers(event) {
+        findSellersWithinDistance(event.latlng, 5);
+    }
+
+
     L.mapbox.accessToken = MB_API_TOKEN;
     var map = L.mapbox.map('map', 'mapbox.streets')
-            .setView([-32.8278, -55.9775], 7); // Setear latitud y longitud de inicio del mapa y el nivel del zoom.
-
-    map.on('click', function(e) { // Asociar el evento click
-        clearMap(map);
-        getClosestDepartment(e);
+            .setView([-34.9090, -56.1730], 11); // Setear latitud y longitud de inicio del mapa y el nivel del zoom.
+	
+	var sellersLayer;
+		
+    map.on('click', function(e) { // Asociar el evento click        
+		if (sellersLayer != null && sellersLayer != 'undefined') {
+			map.removeLayer(sellersLayer);
+		}
+		clearMap(map);
+        //getClosestDepartment(e);
+		getClosestSellers(e);
     });
+	
 
 </script>
 </body>
