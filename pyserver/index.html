@@ -21,13 +21,13 @@
 
     <style>
         body { margin:0; padding:0; }
-        #map { position:absolute; top:35px; bottom:0; width:100%; }
+        #map { position:absolute; top:70px; bottom:0; width:100%; }
 
         #desc{
             position:absolute;
             margin-left:5px;
             margin-right: 5px;
-            height: 35px;
+            height: 70px;
             width:100%;
 
         }
@@ -51,23 +51,68 @@
 <body>
 <div id="desc">
     <div class="row top-row">
-		<div class="col-xs-5">
-			<select id="method">
-			  <option value="1">Departamento - Polygon</option>
-			  <option value="2">Vendedores Cerveza - Points</option>
-			  <option value="3">Otro..</option>
-			</select>
-			<select id="distance">
-			  <option value="1">1 Km</option>
-			  <option value="3">3 Km</option>
-			  <option value="5" selected="selected">5 Km</option>
-			  <option value="10">10 Km</option>
-			  <option value="20">20 Km</option>
-			  <option value="50">50 Km</option>
-			  <option value="100">100 Km</option>
-			  <option value="200">200 Km</option>
-			</select>
-			<button id="cleanBtn">Clean</button> 
+		<div class="panel panel-default">
+			<div class="panel-body"> 			
+				<div class="col-xs-12">
+				<div class="form-inline" id="form">
+					<div class="form-group">
+						<label for="selmethod">Opciones:</label>
+						<select name="selmethod" id="method" class="form-control">
+						  <option value="1">Departamento - Polygon</option>
+						  <option value="2">Vendedores Cerveza - Points</option>
+						  <option value="3">Dummy</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<select id="distance"  class="form-control">
+						  <option value="1">1 Km</option>
+						  <option value="2">2 Km</option>
+						  <option value="3">3 Km</option>
+						  <option value="4">4 Km</option>
+						  <option value="5" selected="selected">5 Km</option>
+						  <option value="8">8 Km</option>
+						  <option value="10">10 Km</option>
+						  <option value="20">20 Km</option>
+						  <option value="50">50 Km</option>
+						  <option value="100">100 Km</option>
+						  <option value="200">200 Km</option>
+						  <option value="300">300 Km</option>
+						  <option value="600">600 Km</option>
+						</select>
+					</div>					
+					<div class="form-group">
+						<label for="seldepto">Vendedores:</label>
+						<select id="departments" name="seldepto" class="form-control">
+							<option value="Montevideo">Montevideo</option>
+							<option value="Artigas">Artigas</option>
+							<option value="Canelones">Canelones</option>
+							<option value="Colonia">Colonia</option>
+							<option value="Durazno">Durazno</option>
+							<option value="Florida">Florida</option>
+							<option value="Rio Negro">Rio Negro</option>
+							<option value="Cerro Largo">Cerro Largo</option>
+							<option value="Soriano">Soriano</option>
+							<option value="Paysandú">Paysandú</option>
+							<option value="Maldonado">Maldonado</option>
+							<option value="Rivera">Rivera</option>
+							<option value="Rocha">Rocha</option>
+							<option value="Salto">Salto</option>
+							<option value="San José">San José</option>
+							<option value="Tacuarembó">Tacuarembó</option>
+							<option value="Treinta y Trés">Treinta y Trés</option>
+							<option value="Flores">Flores</option>
+							<option value="Lavalleja">Lavalleja</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<button id="queryDepto" type="button" class="btn btn-success">Obtener Vendedores</button> 
+					</div>
+					<div class="form-group">
+						<button id="cleanBtn" type="button" class="btn btn-warning">Limpiar Mapa</button>
+					</div>
+				</div>
+				</div>	
+		  </div>
 		</div>			
     </div>
 </div>
@@ -155,6 +200,25 @@
         return jQuery.parseJSON(geoJSON);
     }
 
+	function parseCypherWKTPoints(data) {
+		// Armar un string con la estructura para luego parsear a geo.json
+		var geoJSON = '[' ;
+		var first = 1;
+		for (var i = 0; i < data.length; i++) {
+			var wkt = data[i]["row"][0]["v_wkt"];
+			var point = wkt.slice(7, -1).split(" ");
+			var xy = [Number(point[1]), Number(point[0])];
+            if (first == 1) {
+				first = 0;
+			} else {
+				geoJSON += ', '; 
+			}
+			geoJSON += addFeature(xy, data[i]["row"][0]["v_nombre"], data[i]["row"][0]["v_direccion"]);
+		}
+		geoJSON += ']';
+        return jQuery.parseJSON(geoJSON);
+    }
+	
     /**
      * Make an AJAX POST request
      */
@@ -170,7 +234,6 @@
                 callback("Error", null);
             },
             success: function(data) {
-                //console.log(data);
                 callback(null, data);
             }
         })
@@ -188,7 +251,7 @@
             "pointY": latlng.lat,
             "distanceInKm": distance
         };
-	console.log("lng " + latlng.lng + " - lat " + latlng.lat)
+		console.log("infoDepartmentWithinDistance -  lng " + latlng.lng + " - lat " + latlng.lat + " - distance " + distance);
 
         var districtURL = baseURI + findGeometriesPath;
         makePOSTRequest(districtURL, params, function (error, data) {
@@ -196,7 +259,7 @@
             if (error) {
                 console.log("Error");
             } else {
-                console.log("Resultado: ");
+                console.log('############# infoDepartmentWithinDistance #############');
 				console.log(data);
 
                 var points = parseWKTPolygon(data[0]["data"]["wkt"]);
@@ -216,7 +279,7 @@
             "pointY": latlng.lng,
             "distanceInKm": distance
         };
-		console.log("lng " + latlng.lng + " - lat " + latlng.lat)
+		console.log("findSellersWithinDistance -  lng " + latlng.lng + " - lat " + latlng.lat + " - distance " + distance);
 
         var districtURL = baseURI + findGeometriesPath;
         makePOSTRequest(districtURL, params, function (error, data) {
@@ -224,39 +287,54 @@
             if (error) {
                 console.log("Error");
             } else {
-                console.log("Resultado Vendedores: ");
+				console.log('############# findSellersWithinDistance #############');
 				console.log(data);
                 var geoJSON = parseWKTPoints(data);
-				//console.log(points);
 				addSellersToMap(geoJSON);
             }
         });
     }
+	
 
+	
+
+	function findSellersByDepartment(d_name) {
+		makeCypherRequest(d_name, function (error, data) {
+			if (error) {
+				console.log("Error");
+			} else {
+				console.log('############# findSellersByDepartment #############');
+				console.log(data["results"][0]);
+				var geoJSON = parseCypherWKTPoints(data["results"][0]["data"]);
+				addSellersToMap(geoJSON);				 
+			}
+		});
+	}
 
     /**
      *  Run a Cypher query
      */
-    function makeCypherRequest(statements, callback) {
+    function makeCypherRequest(department_name, callback) {
 
         var url = baseURI.replace(/\/db\/data.*/,"") + "/db/data/transaction/commit";
 
         $.ajax({
             type: 'POST',
-            data: JSON.stringify({
-                statements: statements
-            }),
+            data: JSON.stringify({ statements : [{
+					"statement" : "MATCH (v:Vendedores)-[r:UBICADO_EN]->(d:Departamentos { d_nombre: {department} }) RETURN v",
+					"parameters" : {
+						"department" : department_name
+					  }				
+				}]
+			}),
             contentType: 'application/json',
-	    headers: { "Authorization": "Basic bmVvNGo6cGFibDA" },
+			headers: { "Authorization": "Basic bmVvNGo6cGFibDA" },
             url: url,
             error: function(xhr, statusText, errorThrown){
                 callback("Error", null);
             },
-            //headers: authHeader(),
             success: function(data) {
-                console.log(data);
                 callback(null, data);
-
             }
         });
     }
@@ -342,12 +420,10 @@
 	
 	$('#method').on('change', function() {
 		methodType = $(this).val();
-		console.log(methodType);
 	});
 	
 	$('#distance').on('change', function() {
 		distance = $(this).val();
-		console.log(methodType);
 	});
 	
 	$( "#cleanBtn" ).on( "click", function() {
@@ -357,17 +433,31 @@
 		clearMap(map);
 		initSelect();
 	});
-	
-    map.on('click', function(e) { // Asociar el evento click        
+
+	var d_name = 'Montevideo';
+	$('#departments').on('change', function() {
+		d_name = $(this).val();
+	});
+	$( "#queryDepto" ).on( "click", function() {
 		if (sellersLayer != null && sellersLayer != 'undefined') {
 			map.removeLayer(sellersLayer);
 		}
 		clearMap(map);
+		findSellersByDepartment(d_name);
+	});
+	
+    map.on('click', function(e) { // Asociar el evento click        
+		if (methodType != 3) {
+			if (sellersLayer != null && sellersLayer != 'undefined') {
+				map.removeLayer(sellersLayer);
+			}
+			clearMap(map);
 		
-		if (methodType == 1) {
-			getClosestDepartment(e);
-		} else if (methodType == 2) {
-			getClosestSellers(e);
+			if (methodType == 1) {
+				getClosestDepartment(e);
+			} else if (methodType == 2) {
+				getClosestSellers(e);
+			}
 		}
     });
 	
