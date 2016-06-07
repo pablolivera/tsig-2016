@@ -60,8 +60,12 @@
 						<select name="selmethod" id="method" class="form-control">
 						  <option value="1">Departamento - Polygon</option>
 						  <option value="2">Vendedores Cerveza - Points</option>
-						  <option value="3">Dummy</option>
+						  <option value="3">Vendedores por Departamento</option>
+						  <option value="4">Dummy</option>
 						</select>
+					</div>
+					<div class="form-group">
+						<button id="cleanBtn" type="button" class="btn btn-warning">Limpiar Mapa</button>
 					</div>
 					<div class="form-group">
 						<select id="distance"  class="form-control">
@@ -79,9 +83,8 @@
 						  <option value="300">300 Km</option>
 						  <option value="600">600 Km</option>
 						</select>
-					</div>					
+					</div>			
 					<div class="form-group">
-						<label for="seldepto">Vendedores:</label>
 						<select id="departments" name="seldepto" class="form-control">
 							<option value="Montevideo">Montevideo</option>
 							<option value="Artigas">Artigas</option>
@@ -107,9 +110,7 @@
 					<div class="form-group">
 						<button id="queryDepto" type="button" class="btn btn-success">Obtener Vendedores</button> 
 					</div>
-					<div class="form-group">
-						<button id="cleanBtn" type="button" class="btn btn-warning">Limpiar Mapa</button>
-					</div>
+					
 				</div>
 				</div>	
 		  </div>
@@ -396,7 +397,7 @@
      * @param event
      */
     function getClosestDepartment(event) {
-        infoDepartmentWithinDistance(event.latlng, distance);
+        infoDepartmentWithinDistance(event.latlng, 2);
     }
 
 	function getClosestSellers(event) {
@@ -416,10 +417,30 @@
 		methodType = 1;
 		distance = 5;
 	}
+	
+	function initViewElement() {
+		$('#distance').hide();
+		$('#departments').hide();
+		$( "#queryDepto" ).hide();
+	}
 	$(initSelect());
+	$(initViewElement());
 	
 	$('#method').on('change', function() {
 		methodType = $(this).val();
+		if (methodType == 1) {
+			initViewElement();
+		} else if (methodType == 2) {
+			$('#distance').show();
+			$('#departments').hide();
+			$( "#queryDepto" ).hide();
+		} else if (methodType == 3) {
+			$('#distance').hide();
+			$('#departments').show();
+			$( "#queryDepto" ).show();
+		} else {
+			initViewElement();
+		}
 	});
 	
 	$('#distance').on('change', function() {
@@ -446,7 +467,7 @@
 	});
 	
     map.on('click', function(e) { // Asociar el evento click        
-		if (methodType != 3) {
+		if (methodType != 4) {
 			if (sellersLayer != null && sellersLayer != 'undefined') {
 				map.removeLayer(sellersLayer);
 			}
