@@ -38,7 +38,9 @@ Por último levantar el servidor http en el directrio pyserver:
 python3 -m http.server
 ```
 Luego desde el navegador: http://localhost:8000/index.html (Se debe contar con conexión a internet con los servidores de MapBox.com)
-
+  
+    
+#### Referencias
 
 - **[Neo4j](http://neo4j.com/)** Base de datos NoSQL orientada a grafos.
 - **[neo4j-spatial](https://github.com/neo4j-contrib/spatial)** Plugin para datos geográficos.
